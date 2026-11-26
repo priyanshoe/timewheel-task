@@ -1,6 +1,0 @@
-{
-  "name": "Employee Directory",
-  "description": "Full-stack Employee Directory search application with React, Express, MySQL, and in-memory frontend search caching.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}

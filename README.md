@@ -1,108 +1,128 @@
-# Employee Directory — Full-Stack Search Application
+<p align="center">
+  <img src="frontend/public/banner.png" alt="Employee Search App Banner" />
+</p>
 
-A single-page Employee Directory application built with React, Vite, Tailwind CSS, Axios, Express.js, and MySQL (`mysql2`), featuring parameterized SQL search across all employee fields, automatic MySQL database creation & data seeding, and in-memory frontend query caching.
+# Employee Search App
 
-## Project Structure
-
-```text
-employee-search-app/
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── SearchBar.tsx
-│   │   │   └── EmployeeTable.tsx
-│   │   ├── services/
-│   │   │   └── employeeApi.ts
-│   │   ├── types/
-│   │   │   └── employee.ts
-│   │   ├── utils/
-│   │   │   ├── searchCache.ts
-│   │   │   └── searchCache.test.ts
-│   │   ├── App.tsx
-│   │   ├── main.tsx
-│   │   └── index.css
-│   ├── index.html
-│   ├── package.json
-│   ├── vite.config.ts
-│   └── .env
-├── backend/
-│   ├── db.js
-│   ├── server.js
-│   ├── package.json
-│   ├── .env
-│   └── .env.example
-├── database/
-│   └── employee_search_db.sql
-├── scripts/
-│   └── dev.mjs
-├── package.json
-└── README.md
-```
+A full-stack employee search application with **React + Vite + Tailwind CSS** on the frontend and **Express.js + MySQL** on the backend.
+Features parameterized SQL search, automatic database seeding, and in-memory query caching.
 
 ## Prerequisites
 
-- **Node.js** v18+ and **npm**
-- **MySQL** 8.0+
+- **Node.js** (v18+) and **npm**
+- **MySQL Server** (8.0+)
+- **Git** (optional — for cloning the repo)
 
-## 1. Environment Configuration
 
-Check `backend/.env` with your MySQL credentials:
+## Setup
 
-```env
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=your_password
-DB_NAME=employee_search_db
-DB_PORT=3306
-PORT=5000
-```
+1. **Install dependencies** in both folders:
 
-## 2. Automatic MySQL Seeding & Starting Application
+   ```bash
+   cd frontend && npm install && cd ../backend && npm install && cd ..
+   ```
 
-Run the application with:
+2. **Create the backend `.env` file** from the example:
+
+   ```bash
+   cp backend/.env.example backend/.env
+   ```
+
+3. **Edit `backend/.env`** with your MySQL credentials:
+
+   ```env
+   DB_HOST=localhost
+   DB_USER=root
+   DB_PASSWORD=your_password
+   DB_NAME=employee_search_db
+   DB_PORT=3306
+   PORT=3030
+   ```
+
+## Database Seeding
+
+No manual SQL import is needed. When the backend starts, it automatically:
+
+1. Reads and executes `database/employee_search_db.sql`.
+2. Creates the `employee_search_db` database and `employees` table if they don't exist.
+3. Seeds 24 employee records (using `ON DUPLICATE KEY UPDATE`).
+
+The server starts only after seeding succeeds.
+
+## Run the Application
+
+Start the backend and frontend in **two separate terminals**:
 
 ```bash
-npm run dev
+# Terminal 1 — Backend
+cd backend && npm run dev
 ```
-
-When you start the application:
-1. The backend connects to MySQL using your credentials (without selecting a DB first).
-2. It automatically reads and executes `database/employee_search_db.sql`.
-3. It creates the `employee_search_db` database if it does not exist.
-4. It creates the `employees` table if it does not exist.
-5. It inserts and updates the 24 employee records (`ON DUPLICATE KEY UPDATE`).
-6. The Express server starts on port `5000` only after seeding succeeds.
-7. Vite starts the frontend on port `3000` and proxies `/api` calls to the backend.
-
-## 3. Run Tests & Production Build
 
 ```bash
-# Run unit tests (cache normalization + caching behavior)
-npm test
-
-# Type-check codebase
-npm run lint
-
-# Build production bundle into dist/
-npm run build
+# Terminal 2 — Frontend
+cd frontend && npm run dev
 ```
 
-## API Reference
+| Service  | URL                        |
+|----------|----------------------------|
+| Frontend | `http://localhost:3000`     |
+| Backend  | `http://localhost:3030`     |
 
-### `GET /api/employees/search?q=<searchQuery>`
+verify backend running: `http://localhost:3030/api/health` 
 
-Searches employees using parameterized SQL queries across:
-- Employee `id` (exact integer match)
-- `name` (case-insensitive `LIKE`)
-- `email` (case-insensitive `LIKE`)
-- `dob` (`YYYY-MM-DD` date match)
-- `department` (case-insensitive `LIKE`)
-- `position` (case-insensitive `LIKE`)
+## API
 
-## Frontend In-Memory Caching
+### Search Employees
 
-- Searches execute only on **Search** button click or pressing **Enter**.
-- Queries are normalized using `query.trim().toLowerCase()` before checking the cache.
-- Cache hits display results immediately with a **"Loaded from cache"** indicator and do not call the API again.
-- Cache misses fetch from the backend and display **"Fetched from API"**.
-- Empty match responses are cached; failed requests are never cached.
+```
+GET /api/employees/search?q=john
+```
+
+Searchable fields: **ID**, **name**, **email**, **DOB**, **department**, and **position**.
+
+Response:
+
+```json
+{
+  "success": true,
+  "message": "Employees fetched successfully",
+  "data": [
+    {
+      "id": 1,
+      "name": "John Doe",
+      "email": "john.doe@example.com",
+      "dob": "1990-05-15",
+      "department": "Engineering",
+      "position": "Software Engineer"
+    }
+  ]
+}
+```
+
+## Caching Architecture
+
+- Frontend uses a JavaScript `Map` to cache search results in memory.
+- The query is trimmed and converted to lowercase before cache lookup.
+- **Cache hit** → results are displayed instantly without an API call.
+- **Cache miss** → API is called, results are fetched from MySQL, then saved to the cache.
+- Empty results (no matches) are cached; failed requests are **not** cached.
+- Cache is in-memory only and clears on page refresh.
+
+```mermaid
+flowchart LR
+    A["Search"] --> B["Normalize Query"]
+    B --> C{"Cache Hit?"}
+    C -- Yes --> D["Display Results"]
+    C -- No --> E["API Call"]
+    E --> F["MySQL Query"]
+    F --> G["Save to Cache"]
+    G --> D
+```
+
+## Troubleshooting
+
+| Problem | Fix |
+|---------|-----|
+| **MySQL connection refused / access denied** | Verify `DB_USER`, `DB_PASSWORD`, and `DB_PORT` in `backend/.env`. Ensure MySQL is running. |
+| **Port already in use** | Stop the process using the port or change `PORT` in `backend/.env` / the Vite port in `frontend/package.json`. |
+| **Missing dependencies** | Run `npm install` inside `frontend/` and `backend/`. |
