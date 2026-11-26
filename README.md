@@ -22,13 +22,19 @@ Features parameterized SQL search, automatic database seeding, and in-memory que
    cd frontend && npm install && cd ../backend && npm install && cd ..
    ```
 
-2. **Create the backend `.env` file** from the example:
+2. **Create the frontend `.env` file** from the example:
+
+    ```bash
+    cp frontend/.env.example frontend/.env
+    ```
+
+3. **Create the backend `.env` file** from the example:
 
    ```bash
    cp backend/.env.example backend/.env
    ```
 
-3. **Edit `backend/.env`** with your MySQL credentials:
+4. **Edit `backend/.env`** with your MySQL credentials:
 
    ```env
    DB_HOST=localhost
